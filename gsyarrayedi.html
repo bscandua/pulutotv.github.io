@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diziler</title>
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6a1b9a;
+            --dark: #121212;
+            --darker: #0a0a0a;
+            --light: #f5f5f5;
+            --card-bg: #1e1e1e;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: var(--dark);
+            color: var(--light);
+            overflow-x: hidden;
+        }
+        
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: var(--darker);
+            z-index: 1000;
+            transition: opacity 0.3s;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: var(--darker);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+        
+        .logo {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .menu-btn, .search-btn {
+            background: none;
+            border: none;
+            color: var(--light);
+            font-size: 20px;
+            cursor: pointer;
+        }
+        
+        .search-container {
+            position: relative;
+            width: 0;
+            overflow: hidden;
+            transition: width 0.3s;
+        }
+        
+        .search-container.active {
+            width: 200px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: none;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            outline: none;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -300px;
+            width: 280px;
+            height: 100vh;
+            background: var(--darker);
+            z-index: 90;
+            transition: left 0.3s;
+            padding: 20px;
+            overflow-y: auto;
+            padding-top: 70px;
+        }
+        
+        .sidebar.open {
+            left: 0;
+        }
+        
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 80;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        
+        .sidebar-overlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .category-item {
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+        }
+        
+        .category-item:hover, .category-item.active {
+            background: var(--primary);
+        }
+        
+        .category-icon {
+            margin-right: 10px;
+            font-size: 14px;
+        }
+        
+        /* Main Content */
+        .main-content {
+            padding: 20px;
+            margin-top: 70px;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary);
+        }
+        
+        /* Channel Grid */
+        .channel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+        
+        .channel-card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+        
+        .channel-card:hover {
+            transform: scale(1.03);
+        }
+        
+        .channel-logo {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            background: linear-gradient(45deg, #2b2b2b, #1a1a1a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--light);
+        }
+        
+        .channel-info {
+            padding: 12px;
+        }
+        
+        .channel-name {
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .channel-category {
+            font-size: 12px;
+            color: rgba(255,255,255,0.7);
+            margin-top: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* Player */
+        .player-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 200;
+            display: none;
+            flex-direction: column;
+        }
+        
+        .player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: rgba(0,0,0,0.7);
+        }
+        
+        .player-title {
+            font-size: 18px;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 80%;
+        }
+        
+        .close-player {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .player-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+        }
+        
+        /* VideoJS Progress Indicator */
+        .vjs-progress-control .vjs-mouse-display {
+            background: rgba(255, 255, 255, 0.8);
+            width: 2px;
+        }
+        
+        .vjs-progress-control .vjs-time-tooltip {
+            background-color: var(--primary);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .channel-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            }
+            
+            .channel-logo {
+                height: 180px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .channel-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                gap: 12px;
+            }
+            
+            .channel-logo {
+                height: 150px;
+            }
+            
+            .search-container.active {
+                width: 160px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="spinner"></div>
+        <div class="loading-text">Diziler yükleniyor...</div>
+    </div>
+    
+    <!-- Header -->
+    <header class="header">
+        <div class="header-controls">
+            <button class="menu-btn" id="menuBtn"><i class="fas fa-bars"></i></button>
+            <div class="search-container" id="searchContainer">
+                <input type="text" class="search-input" id="searchInput" placeholder="Dizi ara...">
+            </div>
+        </div>
+        <div class="logo">Diziler</div>
+        <div class="header-controls">
+            <button class="search-btn" id="searchBtn"><i class="fas fa-search"></i></button>
+        </div>
+    </header>
+    
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <h3 style="color: var(--primary); margin-bottom: 15px;">Kategoriler</h3>
+        <div class="category-list" id="categoryList">
+            <div class="category-item active" data-category="all">
+                <i class="fas fa-list category-icon"></i>
+                <span>Tüm Diziler</span>
+            </div>
+            <!-- Kategoriler buraya eklenecek -->
+        </div>
+    </div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        <h2 class="section-title" id="sectionTitle">Tüm Diziler</h2>
+        <div class="channel-grid" id="channelGrid"></div>
+    </main>
+    
+    <!-- Player -->
+    <div class="player-overlay" id="playerOverlay">
+        <div class="player-header">
+            <div class="player-title" id="playerTitle"></div>
+            <button class="close-player" id="closePlayer"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="player-container">
+            <video id="videoPlayer" class="video-js vjs-big-play-centered" controls preload="auto"></video>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elements
+            const loadingScreen = document.getElementById('loadingScreen');
+            const menuBtn = document.getElementById('menuBtn');
+            const searchBtn = document.getElementById('searchBtn');
+            const searchContainer = document.getElementById('searchContainer');
+            const searchInput = document.getElementById('searchInput');
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            const categoryList = document.getElementById('categoryList');
+            const channelGrid = document.getElementById('channelGrid');
+            const sectionTitle = document.getElementById('sectionTitle');
+            const playerOverlay = document.getElementById('playerOverlay');
+            const playerTitle = document.getElementById('playerTitle');
+            const closePlayer = document.getElementById('closePlayer');
+            const videoPlayer = document.getElementById('videoPlayer');
+            
+            // Data
+            let channels = [];
+            let categories = [];
+            let currentPlayer = null;
+            let activeCategory = 'all';
+            
+            // M3U URL with CORS proxy to avoid issues
+            const M3U_URL = 'https://corsproxy.io/?' + encodeURIComponent('https://raw.githubusercontent.com/ademolalookman/ademola/refs/heads/main/dizifun.m3u');
+            
+            // Initialize
+            init();
+            
+            function init() {
+                // Event listeners
+                menuBtn.addEventListener('click', toggleSidebar);
+                sidebarOverlay.addEventListener('click', toggleSidebar);
+                searchBtn.addEventListener('click', toggleSearch);
+                searchInput.addEventListener('input', filterChannels);
+                closePlayer.addEventListener('click', closeVideoPlayer);
+                
+                // Load M3U data
+                loadM3UData();
+            }
+            
+            function toggleSidebar() {
+                sidebar.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+                searchContainer.classList.remove('active');
+            }
+            
+            function toggleSearch() {
+                searchContainer.classList.toggle('active');
+                if (searchContainer.classList.contains('active')) {
+                    searchInput.focus();
+                } else {
+                    searchInput.value = '';
+                    filterChannels();
+                }
+            }
+            
+            function filterChannels() {
+                const searchTerm = searchInput.value.toLowerCase();
+                
+                let filtered = channels;
+                
+                // Category filter
+                if (activeCategory !== 'all') {
+                    filtered = filtered.filter(ch => ch.group_title === activeCategory);
+                }
+                
+                // Search filter
+                if (searchTerm) {
+                    filtered = filtered.filter(ch => 
+                        ch.name.toLowerCase().includes(searchTerm) || 
+                        (ch.group_title && ch.group_title.toLowerCase().includes(searchTerm))
+                }
+                
+                renderChannels(filtered);
+            }
+            
+            function loadM3UData() {
+                // Show loading screen
+                loadingScreen.style.display = 'flex';
+                
+                // Try to fetch with timeout
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 15000);
+                
+                fetch(M3U_URL, { signal: controller.signal })
+                    .then(response => {
+                        clearTimeout(timeout);
+                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                        return response.text();
+                    })
+                    .then(data => {
+                        // Debug log
+                        console.log("M3U Data Sample:", data.substring(0, 500));
+                        return parseM3U(data);
+                    })
+                    .then(() => {
+                        renderUI();
+                        hideLoadingScreen();
+                    })
+                    .catch(error => {
+                        console.error("Fetch error:", error);
+                        hideLoadingScreen();
+                        showError("Diziler yüklenirken hata oluştu: " + error.message);
+                    });
+            }
+            
+            function parseM3U(data) {
+                const lines = data.split('\n');
+                channels = [];
+                categories = new Set(['all']);
+                
+                let currentChannel = {};
+                
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    
+                    if (line.startsWith('#EXTINF:')) {
+                        currentChannel = {};
+                        
+                        // Parse EXTINF line
+                        const extinf = line.substring(8);
+                        const commaIndex = extinf.indexOf(',');
+                        const params = extinf.substring(0, commaIndex);
+                        currentChannel.name = extinf.substring(commaIndex + 1).trim();
+                        
+                        // Parse parameters
+                        const paramsList = params.split(' ');
+                        paramsList.forEach(param => {
+                            const [key, value] = param.split('=');
+                            if (key && value) {
+                                currentChannel[key] = value.replace(/"/g, '').trim();
+                            }
+                        });
+                        
+                        // Get URL (next line)
+                        currentChannel.url = lines[++i]?.trim();
+                        
+                        if (currentChannel.url && currentChannel.url.startsWith('http')) {
+                            // Process logo URL
+                            if (currentChannel.tvg_logo) {
+                                try {
+                                    let logoUrl = currentChannel.tvg_logo;
+                                    if (!logoUrl.startsWith('http')) {
+                                        logoUrl = 'https://' + logoUrl;
+                                    }
+                                    // Validate URL
+                                    new URL(logoUrl);
+                                    currentChannel.tvg_logo = logoUrl;
+                                } catch {
+                                    currentChannel.tvg_logo = null;
+                                }
+                            }
+                            
+                            // Process category
+                            if (currentChannel.group_title) {
+                                const category = currentChannel.group_title.trim();
+                                if (category) {
+                                    categories.add(category);
+                                    currentChannel.group_title = category;
+                                }
+                            }
+                            
+                            channels.push(currentChannel);
+                        }
+                    }
+                }
+                
+                // Convert to array and sort
+                categories = Array.from(categories).sort((a, b) => a.localeCompare(b));
+                console.log("Parsed Channels:", channels.length);
+                console.log("Parsed Categories:", categories);
+            }
+            
+            function renderUI() {
+                renderCategories();
+                renderChannels();
+            }
+            
+            function renderChannels(channelList = channels) {
+                channelGrid.innerHTML = '';
+                
+                if (channelList.length === 0) {
+                    channelGrid.innerHTML = `
+                        <div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:rgba(255,255,255,0.5)">
+                            <i class="fas fa-tv" style="font-size:40px;margin-bottom:15px;"></i>
+                            <p>Hiç içerik bulunamadı</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                channelList.forEach(channel => {
+                    const channelCard = document.createElement('div');
+                    channelCard.className = 'channel-card';
+                    
+                    // Logo with multiple fallbacks
+                    let logoContent;
+                    if (channel.tvg_logo) {
+                        logoContent = `
+                            <img src="${channel.tvg_logo}" 
+                                 alt="${channel.name}"
+                                 onerror="this.onerror=null;this.src='https://via.placeholder.com/300x450/6a1b9a/ffffff?text=${encodeURIComponent(channel.name.substring(0, 10))}'">
+                        `;
+                    } else {
+                        logoContent = `
+                            <div style="background:linear-gradient(45deg,#2b2b2b,#1a1a1a);width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                                <i class="fas fa-tv" style="font-size:40px;color:#6a1b9a"></i>
+                            </div>
+                        `;
+                    }
+                    
+                    channelCard.innerHTML = `
+                        <div class="channel-logo">
+                            ${logoContent}
+                        </div>
+                        <div class="channel-info">
+                            <div class="channel-name">${channel.name}</div>
+                            ${channel.group_title ? `<div class="channel-category">${channel.group_title}</div>` : ''}
+                        </div>
+                    `;
+                    
+                    channelCard.addEventListener('click', () => playChannel(channel));
+                    channelGrid.appendChild(channelCard);
+                });
+            }
+            
+            function renderCategories() {
+                // Clear existing categories except "All"
+                const allItem = categoryList.querySelector('[data-category="all"]');
+                categoryList.innerHTML = '';
+                categoryList.appendChild(allItem);
+                
+                // Add other categories
+                categories.filter(cat => cat !== 'all').forEach(category => {
+                    const categoryItem = document.createElement('div');
+                    categoryItem.className = 'category-item';
+                    categoryItem.dataset.category = category;
+                    
+                    // Choose icon based on category
+                    let iconClass = 'fa-tag';
+                    const lowerCat = category.toLowerCase();
+                    if (lowerCat.includes('film')) iconClass = 'fa-film';
+                    else if (lowerCat.includes('spor')) iconClass = 'fa-running';
+                    else if (lowerCat.includes('haber')) iconClass = 'fa-newspaper';
+                    else if (lowerCat.includes('çocuk')) iconClass = 'fa-child';
+                    
+                    categoryItem.innerHTML = `
+                        <i class="fas ${iconClass} category-icon"></i>
+                        <span>${category}</span>
+                    `;
+                    
+                    categoryItem.addEventListener('click', function() {
+                        // Update active category
+                        document.querySelectorAll('.category-item').forEach(item => 
+                            item.classList.remove('active'));
+                        this.classList.add('active');
+                        activeCategory = category;
+                        
+                        // Update title
+                        sectionTitle.textContent = category;
+                        
+                        // Filter channels
+                        filterChannels();
+                        
+                        // Close sidebar on mobile
+                        if (window.innerWidth <= 768) {
+                            toggleSidebar();
+                        }
+                    });
+                    
+                    categoryList.appendChild(categoryItem);
+                });
+            }
+            
+            function playChannel(channel) {
+                console.log("Playing channel:", channel);
+                playerTitle.textContent = channel.name;
+                playerOverlay.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+                
+                // Dispose previous player if exists
+                if (currentPlayer) {
+                    currentPlayer.dispose();
+                }
+                
+                // Create new player
+                currentPlayer = videojs('videoPlayer', {
+                    controls: true,
+                    autoplay: true,
+                    preload: 'auto',
+                    responsive: true,
+                    fluid: true,
+                    controlBar: {
+                        progressControl: {
+                            seekBar: true
+                        },
+                        remainingTimeDisplay: true,
+                        durationDisplay: true,
+                        currentTimeDisplay: true,
+                        timeDivider: true
+                    }
+                });
+                
+                // Set source and handle errors
+                currentPlayer.ready(() => {
+                    currentPlayer.src({
+                        src: channel.url,
+                        type: 'application/x-mpegURL'
+                    });
+                    
+                    currentPlayer.on('error', () => {
+                        console.error("Player error, trying fallback...");
+                        currentPlayer.src({
+                            src: channel.url,
+                            type: 'video/mp4'
+                        });
+                    });
+                });
+            }
+            
+            function closeVideoPlayer() {
+                if (currentPlayer) {
+                    currentPlayer.pause();
+                    currentPlayer.dispose();
+                    currentPlayer = null;
+                }
+                playerOverlay.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+            
+            function hideLoadingScreen() {
+                loadingScreen.style.opacity = '0';
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                }, 300);
+            }
+            
+            function showError(message) {
+                loadingScreen.innerHTML = `
+                    <div style="text-align: center; padding: 20px;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 40px; color: #ff5555; margin-bottom: 15px;"></i>
+                        <h3 style="margin-bottom: 10px;">Hata oluştu</h3>
+                        <p style="margin-bottom: 20px; color: rgba(255,255,255,0.7);">${message}</p>
+                        <button onclick="window.location.reload()" style="
+                            padding: 8px 16px;
+                            background: var(--primary);
+                            color: white;
+                            border: none;
+                            border-radius: 4px;
+                            cursor: pointer;
+                        ">
+                            <i class="fas fa-sync-alt"></i> Tekrar Dene
+                        </button>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
