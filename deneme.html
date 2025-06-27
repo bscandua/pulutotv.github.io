@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>M3U Oynatıcı</title>
+<link href="https://vjs.zencdn.net/8.12.0/video-js.css" rel="stylesheet"/>
+<style>
+/* Önceki CSS içeriği burada olacak */
+:root{--bgd:#121212;--bgm:#1e1e1e;--bgl:#2a2a2a;--tc:#e0e0e0;--ac:#007bff;--ah:#0056b3;--fo:#00aaff;--bc:#333;--sc:rgba(0,0,0,.5)}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background-color:var(--bgd);color:var(--tc);display:flex;min-height:100vh;margin:0;overflow:hidden}
+.main-container{display:flex;flex-direction:column;width:100%;max-width:1400px;margin:20px auto;background-color:var(--bgm);border-radius:12px;box-shadow:0 8px 30px var(--sc);overflow:hidden}
+.loading-screen{position:fixed;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,.95);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:1000;color:#fff;font-size:1.8em}
+.loading-spinner{border:6px solid rgba(255,255,255,.3);border-top:6px solid var(--ac);border-radius:50%;width:60px;height:60px;animation:spin 1s linear infinite;margin-bottom:25px}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="main-container">
+  <div id="contentArea" style="display:flex;flex-grow:1">
+    <div class="player-wrapper" style="width:100%;background:#000">
+      <video id="my-video" class="video-js" controls preload="auto" width="100%"></video>
+    </div>
+  </div>
+</div>
+<div class="loading-screen" id="loadingScreen">
+  <div class="loading-spinner"></div>
+  <p id="loadingText">İçerik yükleniyor, lütfen bekleyin...</p>
+</div>
+
+<script src="https://vjs.zencdn.net/8.12.0/video.min.js"></script>
+<script>
+// 1. HATA AYIKLAMA MODU
+const DEBUG = true;
+const MAX_RETRIES = 2;
+let retryCount = 0;
+
+// 2. ALTERNATİF M3U KAYNAKLARI
+const M3U_SOURCES = [
+  "https://raw.githubusercontent.com/ademolalookman/ademola/refs/heads/main/filmfun.m3u",
+  "https://example.com/backup.m3u", // Yedek kaynak
+  "https://iptv-org.github.io/iptv/countries/tr.m3u" // Genel Türk kanalları
+];
+
+// 3. TEST VERİLERİ (Yedek)
+const TEST_CHANNELS = [
+  {
+    name: "Test Kanal 1",
+    url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+    category: "Test"
+  },
+  {
+    name: "Test Kanal 2", 
+    url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+    category: "Test"
+  }
+];
+
+// 4. YÜKLEME DURUMU GÜNCELLE
+function updateLoadingText(text) {
+  const loadingText = document.getElementById('loadingText');
+  if (loadingText) loadingText.textContent = text;
+  if (DEBUG) console.log(text);
+}
+
+// 5. M3U YÜKLEME FONKSİYONU (YENİ)
+async function loadM3U(url) {
+  updateLoadingText(`Kaynak deneniyor: ${url}`);
+  
+  try {
+    // CORS problemi için proxy kullanımı
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+    const response = await fetch(proxyUrl);
+    
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
+    const data = await response.json();
+    const m3uContent = data.contents;
+    
+    if (!m3uContent || m3uContent.trim() === '') {
+      throw new Error("Boş M3U içeriği");
+    }
+    
+    return parseM3U(m3uContent);
+  } catch (error) {
+    if (DEBUG) console.error(`${url} yükleme hatası:`, error);
+    
+    // Direkt erişim dene (proxy olmadan)
+    try {
+      const directResponse = await fetch(url);
+      if (!directResponse.ok) throw new Error(`HTTP ${directResponse.status}`);
+      const text = await directResponse.text();
+      return parseM3U(text);
+    } catch (directError) {
+      throw new Error(`Proxy ve direkt erişim başarısız: ${directError.message}`);
+    }
+  }
+}
+
+// 6. M3U AYRIŞTIRICI
+function parseM3U(content) {
+  const channels = [];
+  const lines = content.split('\n');
+  let currentChannel = {};
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    
+    if (line.startsWith('#EXTINF:')) {
+      currentChannel = {
+        name: line.split(',').pop() || `Kanal ${channels.length + 1}`,
+        category: line.match(/group-title="([^"]*)"/)?.[1] || 'Diğer',
+        url: ''
+      };
+    } 
+    else if (line.startsWith('http')) {
+      currentChannel.url = line;
+      channels.push(currentChannel);
+      currentChannel = {};
+    }
+  }
+  
+  if (DEBUG) console.log("Ayrıştırılan kanallar:", channels.slice(0, 3));
+  return channels;
+}
+
+// 7. PLAYER BAŞLATMA
+function initPlayer(channels) {
+  const loadingScreen = document.getElementById('loadingScreen');
+  
+  if (!channels || channels.length === 0) {
+    updateLoadingText("Yüklenebilir kanal bulunamadı. Test verileri kullanılıyor...");
+    channels = TEST_CHANNELS;
+  }
+  
+  const player = videojs('my-video', {
+    fluid: true,
+    autoplay: false,
+    controls: true,
+    sources: [{
+      src: channels[0].url,
+      type: 'application/x-mpegURL'
+    }]
+  });
+  
+  player.ready(() => {
+    loadingScreen.style.display = 'none';
+    
+    player.on('error', () => {
+      const error = player.error();
+      console.error('Player error:', error);
+      updateLoadingText(`Oynatıcı hatası: ${error?.message || 'Bilinmeyen hata'}`);
+      loadingScreen.style.display = 'flex';
+    });
+  });
+  
+  return player;
+}
+
+// 8. ANA YÜKLEME İŞLEMİ
+async function initApp() {
+  updateLoadingText("Uygulama başlatılıyor...");
+  
+  let loadedChannels = [];
+  
+  // Tüm kaynakları dene
+  for (const source of M3U_SOURCES) {
+    try {
+      loadedChannels = await loadM3U(source);
+      if (loadedChannels.length > 0) break;
+    } catch (error) {
+      console.warn(`${source} yüklenemedi:`, error.message);
+    }
+  }
+  
+  // Hiçbir kaynak yüklenmezse test verilerini kullan
+  if (loadedChannels.length === 0) {
+    console.warn("Tüm kaynaklar başarısız, test verileri kullanılıyor");
+    loadedChannels = TEST_CHANNELS;
+  }
+  
+  initPlayer(loadedChannels);
+}
+
+// 9. SAYFA YÜKLENDİĞİNDE
+document.addEventListener('DOMContentLoaded', () => {
+  // 10. YÜKLEMEYİ BAŞLAT
+  setTimeout(() => {
+    initApp().catch(error => {
+      console.error("Uygulama başlatma hatası:", error);
+      updateLoadingText(`Hata: ${error.message}`);
+      
+      // Son çare olarak test verileriyle başlat
+      initPlayer(TEST_CHANNELS);
+    });
+  }, 500);
+});
+
+// 11. EMNİYET AĞI - 10 saniye sonra hala yükleniyorsa
+setTimeout(() => {
+  const loadingScreen = document.getElementById('loadingScreen');
+  if (loadingScreen.style.display !== 'none') {
+    console.warn("Uzun süreli yükleme tespit edildi, alternatif yöntemler deneniyor");
+    updateLoadingText("Alternatif yöntemler deneniyor...");
+    initPlayer(TEST_CHANNELS);
+  }
+}, 10000);
+</script>
+</body>
+</html>
