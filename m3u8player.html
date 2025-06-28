@@ -18,38 +18,6 @@
         .player-container {
             width: 100vw;
             height: 100vh;
-            position: relative;
-        }
-        
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            color: white;
-            font-size: 1.5rem;
-            flex-direction: column;
-        }
-        
-        .spinner {
-            border: 5px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top: 5px solid #00ffaa;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin-bottom: 15px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
         
         .remote-help {
@@ -80,17 +48,10 @@
     </style>
 </head>
 <body>
-    <div class="loading-overlay">
-        <div class="spinner"></div>
-        <span>Yayın yükleniyor...</span>
-    </div>
-
     <div class="player-container">
         <video-js id="my-video" class="video-js vjs-theme-fantasy vjs-big-play-centered" controls preload="auto" autoplay muted>
+            <!-- TEK LİNK EKLEME YERİ (AŞAĞIDAKİ src KISMINA M3U8 LİNKİNİZİ YAPIŞTIRIN) -->
             <source src="https://trt.daioncdn.net/trt-1/master.m3u8" type="application/x-mpegURL">
-            <p class="vjs-no-js">
-                JavaScript desteği kapalı görünüyor. Lütfen tarayıcınızda JavaScript'i etkinleştirin.
-            </p>
         </video-js>
     </div>
 
@@ -111,162 +72,45 @@
     <script src="https://cdn.jsdelivr.net/npm/videojs-hls-quality-selector@1.1.4/dist/videojs-hls-quality-selector.min.js"></script>
     
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Player ayarları
-            const player = videojs('my-video', {
-                fluid: true,
-                liveui: true,
-                playbackRates: [0.5, 1, 1.5, 2],
-                controlBar: {
-                    children: [
-                        'playToggle',
-                        'volumePanel',
-                        'currentTimeDisplay',
-                        'timeDivider',
-                        'durationDisplay',
-                        'progressControl',
-                        'liveDisplay',
-                        'remainingTimeDisplay',
-                        'customControlSpacer',
-                        'playbackRateMenuButton',
-                        'chaptersButton',
-                        'descriptionsButton',
-                        'subsCapsButton',
-                        'audioTrackButton',
-                        'qualitySelector',
-                        'fullscreenToggle'
-                    ]
-                }
-            });
-            
-            // Quality selector eklentisini etkinleştir
-            player.hlsQualitySelector = function(options) {
-                player.qualityLevels();
-                player.hlsQualitySelector(options);
-            };
-            
-            // Player hazır olduğunda
-            player.ready(function() {
-                console.log('Player hazır');
-                
-                // Otomatik tam ekran (ilk yüklemede çalışmayabilir, tarayıcı güvenlik politikaları nedeniyle)
-                setTimeout(() => {
-                    if (player.isFullscreen() === false) {
-                        player.requestFullscreen();
-                    }
-                }, 1000);
-                
-                // Yükleme ekranını kaldır
-                document.querySelector('.loading-overlay').style.display = 'none';
-                
-                // Kumanda yardımını göster
-                document.getElementById('remoteHelp').style.display = 'block';
-                
-                // 10 saniye sonra yardımı gizle
-                setTimeout(() => {
-                    document.getElementById('remoteHelp').style.display = 'none';
-                }, 10000);
-                
-                // Hata yönetimi
-                player.on('error', function() {
-                    const error = player.error();
-                    console.error('Player hatası:', error);
-                    
-                    // Hata durumunda yeniden deneme
-                    setTimeout(() => {
-                        player.src({ src: 'https://trt.daioncdn.net/trt-1/master.m3u8', type: 'application/x-mpegURL' });
-                        player.play();
-                    }, 3000);
-                });
-            });
-            
-            // Ağ hataları için yeniden deneme
-            player.on('retryplaylist', function() {
-                console.log('Playlist yeniden deneniyor...');
-                setTimeout(() => {
-                    player.src({ src: 'https://trt.daioncdn.net/trt-1/master.m3u8', type: 'application/x-mpegURL' });
-                    player.play();
-                }, 3000);
-            });
-            
-            // TV Kumanda Kontrolleri
-            document.addEventListener('keydown', function(e) {
-                const keyPressedElement = document.getElementById('keyPressed');
-                keyPressedElement.style.display = 'block';
-                
-                // Tuş bilgisini göster ve 1 saniye sonra gizle
-                clearTimeout(window.keyPressTimeout);
-                window.keyPressTimeout = setTimeout(() => {
-                    keyPressedElement.style.display = 'none';
-                }, 1000);
-                
-                switch(e.key) {
-                    case 'ArrowUp':
-                        keyPressedElement.textContent = '▲';
-                        // 10 saniye ileri sar
-                        player.currentTime(player.currentTime() + 10);
-                        break;
-                        
-                    case 'ArrowDown':
-                        keyPressedElement.textContent = '▼';
-                        // 10 saniye geri sar
-                        player.currentTime(player.currentTime() - 10);
-                        break;
-                        
-                    case 'ArrowLeft':
-                        keyPressedElement.textContent = '◄';
-                        // Ses azalt
-                        player.volume(player.volume() - 0.1);
-                        break;
-                        
-                    case 'ArrowRight':
-                        keyPressedElement.textContent = '►';
-                        // Ses artır
-                        player.volume(player.volume() + 0.1);
-                        break;
-                        
-                    case 'Enter':
-                        keyPressedElement.textContent = 'OK';
-                        // Oynat/Duraklat
-                        if (player.paused()) {
-                            player.play();
-                        } else {
-                            player.pause();
-                        }
-                        break;
-                        
-                    case 'Backspace':
-                    case 'Escape':
-                        keyPressedElement.textContent = e.key === 'Backspace' ? 'Back' : 'Esc';
-                        // Tam ekran aç/kapat
-                        if (player.isFullscreen()) {
-                            player.exitFullscreen();
-                        } else {
-                            player.requestFullscreen();
-                        }
-                        break;
-                        
-                    case 'i':
-                    case 'I':
-                        keyPressedElement.textContent = 'Info';
-                        // Kalite seçim menüsünü göster
-                        const qualityButton = player.controlBar.getChild('qualitySelector');
-                        if (qualityButton) {
-                            qualityButton.show();
-                        }
-                        break;
-                        
-                    case 'h':
-                    case 'H':
-                        // Yardım menüsünü göster/gizle
-                        const helpElement = document.getElementById('remoteHelp');
-                        helpElement.style.display = helpElement.style.display === 'none' ? 'block' : 'none';
-                        break;
-                        
-                    default:
-                        keyPressedElement.style.display = 'none';
-                }
-            });
+        // M3U8 Linki Otomatik Ayarlama
+        const m3u8Url = document.querySelector('source').src;
+        
+        const player = videojs('my-video', {
+            fluid: true,
+            liveui: true,
+            playbackRates: [0.5, 1, 1.5, 2]
+        });
+
+        player.ready(() => {
+            // Kumanda yardımını göster (10 saniye sonra gizle)
+            document.getElementById('remoteHelp').style.display = 'block';
+            setTimeout(() => {
+                document.getElementById('remoteHelp').style.display = 'none';
+            }, 10000);
+
+            // Otomatik tam ekran (tarayıcı izin verirse)
+            setTimeout(() => player.requestFullscreen(), 1000);
+        });
+
+        // TV Kumanda Kontrolleri
+        document.addEventListener('keydown', (e) => {
+            const keyPressedElement = document.getElementById('keyPressed');
+            keyPressedElement.textContent = e.key;
+            keyPressedElement.style.display = 'block';
+            setTimeout(() => keyPressedElement.style.display = 'none', 1000);
+
+            switch(e.key) {
+                case 'ArrowUp': player.currentTime(player.currentTime() + 10); break;
+                case 'ArrowDown': player.currentTime(player.currentTime() - 10); break;
+                case 'ArrowLeft': player.volume(player.volume() - 0.1); break;
+                case 'ArrowRight': player.volume(player.volume() + 0.1); break;
+                case 'Enter': player.paused() ? player.play() : player.pause(); break;
+                case 'Backspace':
+                case 'Escape': player.isFullscreen() ? player.exitFullscreen() : player.requestFullscreen(); break;
+                case 'i': player.controlBar.getChild('qualitySelector')?.show(); break;
+                case 'h': document.getElementById('remoteHelp').style.display = 
+                         document.getElementById('remoteHelp').style.display === 'none' ? 'block' : 'none'; break;
+            }
         });
     </script>
 </body>
