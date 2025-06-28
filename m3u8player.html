@@ -82,12 +82,12 @@
 <body>
     <div class="loading-overlay">
         <div class="spinner"></div>
-        <span>Player yükleniyor...</span>
+        <span>Yayın yükleniyor...</span>
     </div>
 
     <div class="player-container">
         <video-js id="my-video" class="video-js vjs-theme-fantasy vjs-big-play-centered" controls preload="auto" autoplay muted>
-            <source src="YOUR_M3U8_URL_HERE" type="application/x-mpegURL">
+            <source src="https://trt.daioncdn.net/trt-1/master.m3u8" type="application/x-mpegURL">
             <p class="vjs-no-js">
                 JavaScript desteği kapalı görünüyor. Lütfen tarayıcınızda JavaScript'i etkinleştirin.
             </p>
@@ -174,7 +174,7 @@
                     
                     // Hata durumunda yeniden deneme
                     setTimeout(() => {
-                        player.src({ src: 'YOUR_M3U8_URL_HERE', type: 'application/x-mpegURL' });
+                        player.src({ src: 'https://trt.daioncdn.net/trt-1/master.m3u8', type: 'application/x-mpegURL' });
                         player.play();
                     }, 3000);
                 });
@@ -184,7 +184,7 @@
             player.on('retryplaylist', function() {
                 console.log('Playlist yeniden deneniyor...');
                 setTimeout(() => {
-                    player.src({ src: 'YOUR_M3U8_URL_HERE', type: 'application/x-mpegURL' });
+                    player.src({ src: 'https://trt.daioncdn.net/trt-1/master.m3u8', type: 'application/x-mpegURL' });
                     player.play();
                 }, 3000);
             });
