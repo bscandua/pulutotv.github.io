@@ -411,8 +411,8 @@
     <div class="main-container">
         <div class="content-area" id="contentArea">
             <div class="category-panel">
-                <h3>Filmler</h3>
-                <input type="text" id="categorySearchInput" placeholder="Kategori ara..." tabindex="0">
+                <h3>Diziler</h3>
+                <input type="text" id="categorySearchInput" placeholder="Dizi ara..." tabindex="0">
                 <ul id="categoryList"></ul>
             </div>
             <div class="player-list-area">
@@ -427,7 +427,7 @@
                     </div>
                 </div>
                 <div class="channel-list-wrapper" id="channelListWrapper" tabindex="0">
-                    <input type="text" id="channelSearchInput" placeholder="Film ara..." tabindex="0">
+                    <input type="text" id="channelSearchInput" placeholder="Sezon & Bölüm ara..." tabindex="0">
                     <div id="channelList" class="channel-list"></div>
                 </div>
             </div>
@@ -496,7 +496,7 @@
         const channelListWrapper = document.getElementById('channelListWrapper');
 
         // M3U URL
-        const M3U_URL = 'https://raw.githubusercontent.com/ademolalookman/ademola/refs/heads/main/filmfun.m3u';
+        const M3U_URL = 'https://raw.githubusercontent.com/ademolalookman/ademola/refs/heads/main/dizifun.m3u';
         
         // Global değişkenler
         let allChannels = [];
