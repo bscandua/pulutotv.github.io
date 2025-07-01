@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filmler</title>
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #e50914;
+            --secondary-color: #f5f5f1;
+            --dark-color: #141414;
+            --light-color: #f5f5f7;
+            --hover-color: #b00710;
+            --card-width: 200px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Netflix Sans', 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--dark-color);
+            color: var(--light-color);
+            overflow-x: hidden;
+            height: 100vh;
+        }
+
+        /* Ana Container */
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        /* Üst Bilgi Çubuğu */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background-color: rgba(20, 20, 20, 0.95);
+            border-bottom: 1px solid #333;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 25px;
+            padding: 0.5rem 1rem;
+            width: 300px;
+        }
+
+        .search-box input {
+            background: transparent;
+            border: none;
+            color: white;
+            width: 100%;
+            outline: none;
+            padding: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .search-box button {
+            background: none;
+            border: none;
+            color: var(--light-color);
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        /* Menü Açma Butonu */
+        .menu-toggle {
+            background: none;
+            border: none;
+            color: var(--light-color);
+            font-size: 1.8rem;
+            cursor: pointer;
+            margin-right: 1rem;
+            display: none;
+        }
+
+        /* Ana İçerik */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Yan Menü (Kategoriler) */
+        .sidebar {
+            width: 250px;
+            background-color: rgba(20, 20, 20, 0.95);
+            padding: 1rem;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 10;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .category-title {
+            font-size: 1.2rem;
+            color: var(--primary-color);
+        }
+
+        .close-sidebar {
+            background: none;
+            border: none;
+            color: var(--light-color);
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: none;
+        }
+
+        .category-search {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 4px;
+            color: white;
+            padding: 0.6rem 0.8rem;
+            margin-bottom: 1rem;
+            width: 100%;
+            font-size: 0.9rem;
+        }
+
+        .category-search::placeholder {
+            color: #999;
+        }
+
+        .category-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .category-item {
+            padding: 0.8rem;
+            margin-bottom: 0.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .category-item:hover, .category-item:focus {
+            background-color: var(--hover-color);
+        }
+
+        .category-item.active {
+            background-color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        /* Film Listesi */
+        .channel-list {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(var(--card-width), 1fr));
+            gap: 1.5rem;
+        }
+
+        .channel-card {
+            background-color: rgba(30, 30, 30, 0.9);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            position: relative;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .channel-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .channel-logo {
+            width: 100%;
+            height: 280px; /* Daha büyük ve daha uygun boyut */
+            background-color: #222;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #aaa;
+            font-size: 0.9rem;
+            overflow: hidden;
+        }
+
+        .channel-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+
+        .channel-card:hover .channel-logo img {
+            transform: scale(1.1);
+        }
+
+        .channel-info {
+            padding: 0.8rem;
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .channel-name {
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 1rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .channel-group {
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+
+        /* Video Oynatıcı */
+        .player-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .player-container.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .close-player {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: background 0.3s;
+            z-index: 1001;
+        }
+
+        .close-player:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Video.js Player Stilleri */
+        .video-js {
+            width: 90%;
+            max-width: 1200px;
+            max-height: 90vh;
+            outline: none;
+        }
+
+        .vjs-big-play-button {
+            background-color: rgba(229, 9, 20, 0.7) !important;
+            border-radius: 50% !important;
+            border: none !important;
+            width: 70px !important;
+            height: 70px !important;
+            line-height: 70px !important;
+        }
+
+        .vjs-duration {
+            display: inline-block !important;
+        }
+
+        /* TV Kumanda Kontrolü için Odaklanma Efekti */
+        .channel-card:focus, .category-item:focus {
+            outline: 2px solid var(--primary-color);
+        }
+
+        /* Mobil ve TV için Optimizasyon */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                transform: translateX(-100%);
+                z-index: 200;
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+            
+            .close-sidebar {
+                display: block;
+            }
+
+            .channel-list {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                padding: 1rem;
+            }
+            
+            .header {
+                padding: 0.8rem 1rem;
+            }
+            
+            .search-box {
+                width: 200px;
+            }
+            
+            :root {
+                --card-width: 140px;
+            }
+            
+            .channel-logo {
+                height: 200px;
+            }
+        }
+
+        /* TV Ekranları için */
+        @media (min-width: 1200px) {
+            :root {
+                --card-width: 220px;
+            }
+            
+            .channel-name {
+                font-size: 1.1rem;
+            }
+            
+            .channel-list {
+                gap: 2rem;
+                padding: 2rem;
+            }
+            
+            .channel-logo {
+                height: 320px;
+            }
+        }
+
+        /* Yükleme Animasyonu */
+        .loading-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 5;
+        }
+
+        .loading {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid var(--primary-color);
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Hata Mesajı */
+        .error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            font-size: 1.2rem;
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Üst Bilgi Çubuğu -->
+        <div class="header">
+            <button class="menu-toggle" id="menu-toggle">☰</button>
+            <div class="logo">Filmler</div>
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="Film ara..." aria-label="Arama">
+                <button id="search-button">🔍</button>
+            </div>
+        </div>
+
+        <!-- Ana İçerik -->
+        <div class="main-content">
+            <!-- Yükleme Animasyonu -->
+            <div class="loading-container" id="loading-container">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <span>Filmler yükleniyor...</span>
+                </div>
+            </div>
+
+            <!-- Yan Menü (Kategoriler) -->
+            <div class="sidebar" id="sidebar">
+                <div class="sidebar-header">
+                    <div class="category-title">Kategoriler</div>
+                    <button class="close-sidebar" id="close-sidebar">✕</button>
+                </div>
+                <input type="text" id="category-search" class="category-search" placeholder="BURAYA BİR ŞEY YAZMA!">
+                <ul class="category-list" id="category-list">
+                    <!-- Kategoriler buraya gelecek -->
+                </ul>
+            </div>
+
+            <!-- Film Listesi -->
+            <div class="channel-list" id="channel-list">
+                <!-- Filmler buraya gelecek -->
+            </div>
+        </div>
+
+        <!-- Video Oynatıcı -->
+        <div class="player-container" id="player-container">
+            <button class="close-player" id="close-player">✕</button>
+            <video id="video-player" class="video-js vjs-default-skin" controls></video>
+        </div>
+    </div>
+
+    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // M3U URL'si
+            const M3U_URL = 'https://raw.githubusercontent.com/ademolalookman/ademola/refs/heads/main/filmfun.m3u';
+
+            // DOM Elementleri
+            const menuToggle = document.getElementById('menu-toggle');
+            const sidebar = document.getElementById('sidebar');
+            const closeSidebar = document.getElementById('close-sidebar');
+            const categoryList = document.getElementById('category-list');
+            const channelList = document.getElementById('channel-list');
+            const searchInput = document.getElementById('search-input');
+            const searchButton = document.getElementById('search-button');
+            const categorySearch = document.getElementById('category-search');
+            const playerContainer = document.getElementById('player-container');
+            const closePlayer = document.getElementById('close-player');
+            const loadingContainer = document.getElementById('loading-container');
+            
+            // Video.js player oluştur
+            const videoPlayer = videojs('video-player', {
+                controls: true,
+                autoplay: true,
+                preload: 'auto',
+                responsive: true,
+                fluid: true,
+                playbackRates: [0.5, 1, 1.5, 2],
+                html5: {
+                    hls: {
+                        overrideNative: true
+                    }
+                }
+            });
+
+            // Verileri saklamak için
+            let categories = [];
+            let channels = [];
+            let filteredChannels = [];
+            let playbackPositions = {};
+
+            // Menü açma/kapatma
+            menuToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('active');
+            });
+
+            // Kategori menüsünü kapat
+            closeSidebar.addEventListener('click', () => {
+                sidebar.classList.remove('active');
+            });
+
+            // M3U Dosyasını Yükle
+            async function loadM3U() {
+                try {
+                    const response = await fetch(M3U_URL);
+                    if (!response.ok) throw new Error('M3U dosyası alınamadı');
+                    const text = await response.text();
+                    parseM3U(text);
+                    loadPlaybackPositions();
+                } catch (error) {
+                    console.error('M3U yüklenirken hata oluştu:', error);
+                    showError('M3U listesi yüklenirken hata oluştu. Lütfen bağlantıyı kontrol edin.');
+                }
+            }
+
+            // Hata göster
+            function showError(message) {
+                loadingContainer.innerHTML = `<div class="error">${message}</div>`;
+            }
+
+            // Oynatma pozisyonlarını yükle
+            function loadPlaybackPositions() {
+                const positions = localStorage.getItem('playbackPositions');
+                if (positions) {
+                    playbackPositions = JSON.parse(positions);
+                }
+            }
+
+            // Oynatma pozisyonunu kaydet
+            function savePlaybackPosition(url, position) {
+                playbackPositions[url] = position;
+                localStorage.setItem('playbackPositions', JSON.stringify(playbackPositions));
+            }
+
+            // M3U Dosyasını Ayrıştır
+            function parseM3U(text) {
+                try {
+                    const lines = text.split('\n');
+                    channels = [];
+                    categories = new Set();
+
+                    for (let i = 0; i < lines.length; i++) {
+                        if (lines[i].startsWith('#EXTINF:')) {
+                            const infoLine = lines[i];
+                            const urlLine = lines[i + 1];
+                            
+                            if (!urlLine || !urlLine.trim()) continue;
+
+                            // Kanal bilgilerini çıkar
+                            const durationMatch = infoLine.match(/(-?\d+)/);
+                            const tvgIdMatch = infoLine.match(/tvg-id="(.*?)"/);
+                            const tvgNameMatch = infoLine.match(/tvg-name="(.*?)"/);
+                            const tvgLogoMatch = infoLine.match(/tvg-logo="(.*?)"/);
+                            const groupTitleMatch = infoLine.match(/group-title="(.*?)"/);
+                            const channelNameMatch = infoLine.match(/,(.*)/);
+
+                            const channel = {
+                                id: tvgIdMatch ? tvgIdMatch[1] : '',
+                                name: channelNameMatch ? channelNameMatch[1].trim() : 'Bilinmeyen Film',
+                                logo: tvgLogoMatch ? tvgLogoMatch[1] : '',
+                                group: groupTitleMatch ? groupTitleMatch[1] : 'Diğer',
+                                url: urlLine ? urlLine.trim() : '',
+                                duration: durationMatch ? parseInt(durationMatch[1]) : 0
+                            };
+
+                            channels.push(channel);
+                            categories.add(channel.group);
+                            i++; // URL satırını atla
+                        }
+                    }
+
+                    console.log(`Toplam ${channels.length} film yüklendi`);
+                    
+                    // Kategorileri göster
+                    displayCategories();
+                    
+                    // Varsayılan olarak tüm filmleri göster
+                    filterByCategory('all');
+                    
+                    // Yükleme ekranını kaldır
+                    loadingContainer.style.display = 'none';
+                } catch (e) {
+                    console.error('M3U ayrıştırma hatası:', e);
+                    showError('M3U dosyası ayrıştırılırken hata oluştu.');
+                }
+            }
+
+            // Kategorileri Listele
+            function displayCategories() {
+                categoryList.innerHTML = '';
+                const sortedCategories = Array.from(categories).sort();
+
+                // Tümü seçeneği ekle
+                const allItem = document.createElement('li');
+                allItem.textContent = 'Tüm Filmler';
+                allItem.className = 'category-item active';
+                allItem.tabIndex = 0;
+                allItem.addEventListener('click', () => {
+                    filterByCategory('all');
+                    sidebar.classList.remove('active');
+                });
+                categoryList.appendChild(allItem);
+
+                // Kategorileri ekle
+                sortedCategories.forEach(category => {
+                    const item = document.createElement('li');
+                    item.textContent = category;
+                    item.className = 'category-item';
+                    item.tabIndex = 0;
+                    item.addEventListener('click', () => {
+                        filterByCategory(category);
+                        sidebar.classList.remove('active');
+                    });
+                    categoryList.appendChild(item);
+                });
+
+                // Kategori arama
+                categorySearch.addEventListener('input', () => {
+                    const searchTerm = categorySearch.value.toLowerCase();
+                    const items = document.querySelectorAll('.category-item');
+                    
+                    items.forEach(item => {
+                        const text = item.textContent.toLowerCase();
+                        if (text.includes(searchTerm)) {
+                            item.style.display = 'block';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                });
+            }
+
+            // Filmleri Listele
+            function displayChannels(channelsToDisplay) {
+                channelList.innerHTML = '';
+
+                if (!channelsToDisplay || channelsToDisplay.length === 0) {
+                    channelList.innerHTML = '<div class="error">Film bulunamadı.</div>';
+                    return;
+                }
+
+                channelsToDisplay.forEach(channel => {
+                    const card = document.createElement('div');
+                    card.className = 'channel-card';
+                    card.tabIndex = 0;
+                    
+                    // Resim yüklenmezse film adını göster
+                    const fallbackName = channel.name.length > 20 ? 
+                        channel.name.substring(0, 20) + '...' : channel.name;
+                    
+                    card.innerHTML = `
+                        <div class="channel-logo">
+                            ${channel.logo ? 
+                                `<img src="${channel.logo}" alt="${channel.name}" 
+                                    onerror="this.onerror=null; this.style.display='none';
+                                    this.nextElementSibling.style.display='block';"> 
+                                 <div style="display:none; padding:10px; text-align:center; height:100%; display:flex; align-items:center; justify-content:center;">
+                                    ${fallbackName}
+                                 </div>
+                                ` : 
+                                `<div style="padding:10px; text-align:center; height:100%; display:flex; align-items:center; justify-content:center;">
+                                    ${fallbackName}
+                                 </div>`
+                            }
+                        </div>
+                        <div class="channel-info">
+                            <div class="channel-name">${channel.name}</div>
+                            <div class="channel-group">${channel.group}</div>
+                        </div>
+                    `;
+
+                    card.addEventListener('click', () => playChannel(channel));
+                    card.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') playChannel(channel);
+                    });
+
+                    channelList.appendChild(card);
+                });
+            }
+
+            // Kategoriye Göre Filtrele
+            function filterByCategory(category) {
+                // Aktif kategoriyi güncelle
+                document.querySelectorAll('.category-item').forEach(item => {
+                    item.classList.remove('active');
+                    if (item.textContent === category || (category === 'all' && item.textContent === 'Tüm Filmler')) {
+                        item.classList.add('active');
+                    }
+                });
+
+                if (category === 'all') {
+                    filteredChannels = [...channels];
+                } else {
+                    filteredChannels = channels.filter(channel => channel.group === category);
+                }
+
+                displayChannels(filteredChannels);
+            }
+
+            // Arama Fonksiyonu
+            function searchChannels() {
+                const searchTerm = searchInput.value.toLowerCase();
+                if (!searchTerm) {
+                    displayChannels(filteredChannels);
+                    return;
+                }
+
+                const results = (filteredChannels.length ? filteredChannels : channels).filter(channel =>
+                    channel.name.toLowerCase().includes(searchTerm)
+                );
+
+                displayChannels(results);
+            }
+
+            // Film Oynat
+            function playChannel(channel) {
+                playerContainer.classList.add('active');
+                
+                // Player'ı sıfırla
+                videoPlayer.src({ src: channel.url, type: 'application/x-mpegURL' });
+                
+                // Süreyi göster
+                const duration = channel.duration > 0 ? 
+                    `Süre: ${Math.floor(channel.duration / 60)} dakika` : 
+                    '';
+                
+                // Kaldığı yerden devam et
+                const lastPosition = playbackPositions[channel.url] || 0;
+                videoPlayer.currentTime(lastPosition);
+                
+                videoPlayer.ready(() => {
+                    videoPlayer.play();
+                    
+                    // Tam ekran yap
+                    setTimeout(() => {
+                        if (videoPlayer.requestFullscreen) {
+                            videoPlayer.requestFullscreen().catch(err => {
+                                console.log('Tam ekran hatası:', err);
+                            });
+                        }
+                    }, 500);
+                });
+
+                // Oynatma pozisyonunu kaydet
+                videoPlayer.on('timeupdate', function() {
+                    savePlaybackPosition(channel.url, videoPlayer.currentTime());
+                });
+            }
+
+            // Oynatıcıyı Kapat
+            function closeVideoPlayer() {
+                videoPlayer.pause();
+                playerContainer.classList.remove('active');
+                
+                // Tam ekrandan çık
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+
+            // TV Kumanda Kontrolü
+            document.addEventListener('keydown', (e) => {
+                // ESC ile oynatıcıyı kapat
+                if (e.key === 'Escape' && playerContainer.classList.contains('active')) {
+                    closeVideoPlayer();
+                }
+            });
+
+            // Olay Dinleyicileri
+            searchButton.addEventListener('click', searchChannels);
+            searchInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') searchChannels();
+            });
+            closePlayer.addEventListener('click', closeVideoPlayer);
+
+            // M3U'yu yükle
+            loadM3U();
+        });
+    </script>
+</body>
+</html>
