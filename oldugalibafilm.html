@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filmler - TV Kumanda Kontrollü</title>
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #e50914;
+            --secondary-color: #f5f5f1;
+            --dark-color: #141414;
+            --light-color: #f5f5f7;
+            --hover-color: #b00710;
+            --card-width: 220px;
+            --card-height: 330px;
+            --image-height: 250px;
+            --focus-color: #ff9900;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Netflix Sans', 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--dark-color);
+            color: var(--light-color);
+            overflow-x: hidden;
+            height: 100vh;
+        }
+
+        /* Ana Container */
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        /* Üst Bilgi Çubuğu */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background-color: rgba(20, 20, 20, 0.95);
+            border-bottom: 1px solid #333;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 25px;
+            padding: 0.5rem 1rem;
+            width: 300px;
+            border: 2px solid transparent;
+        }
+
+        .search-box.focused {
+            border-color: var(--focus-color);
+            box-shadow: 0 0 10px var(--focus-color);
+        }
+
+        .search-box input {
+            background: transparent;
+            border: none;
+            color: white;
+            width: 100%;
+            outline: none;
+            padding: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .search-box button {
+            background: none;
+            border: none;
+            color: var(--light-color);
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        /* Menü Açma Butonu */
+        .menu-toggle {
+            background: none;
+            border: none;
+            color: var(--light-color);
+            font-size: 1.8rem;
+            cursor: pointer;
+            margin-right: 1rem;
+            display: none;
+            border-radius: 4px;
+            padding: 5px;
+        }
+
+        .menu-toggle.focused {
+            background-color: rgba(255, 153, 0, 0.3);
+            box-shadow: 0 0 8px var(--focus-color);
+        }
+
+        /* Ana İçerik */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Yan Menü (Kategoriler) */
+        .sidebar {
+            width: 250px;
+            background-color: rgba(20, 20, 20, 0.95);
+            padding: 1rem;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 10;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .category-title {
+            font-size: 1.2rem;
+            color: var(--primary-color);
+        }
+
+        .close-sidebar {
+            background: none;
+            border: none;
+            color: var(--light-color);
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: none;
+            border-radius: 4px;
+            padding: 5px;
+        }
+
+        .close-sidebar.focused {
+            background-color: rgba(255, 153, 0, 0.3);
+            box-shadow: 0 0 8px var(--focus-color);
+        }
+
+        .category-search {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 4px;
+            color: white;
+            padding: 0.6rem 0.8rem;
+            margin-bottom: 1rem;
+            width: 100%;
+            font-size: 0.9rem;
+        }
+
+        .category-search::placeholder {
+            color: #999;
+        }
+
+        .category-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .category-item {
+            padding: 0.8rem;
+            margin-bottom: 0.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .category-item:hover, .category-item:focus {
+            background-color: var(--hover-color);
+        }
+
+        .category-item.active {
+            background-color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        .category-item.focused {
+            background-color: rgba(255, 153, 0, 0.3);
+            box-shadow: 0 0 8px var(--focus-color);
+        }
+
+        /* YENİ FİLM KARTLARI - STABİL BOYUTLU */
+        .channel-list {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(var(--card-width), 1fr));
+            grid-auto-rows: var(--card-height);
+            gap: 1.5rem;
+        }
+
+        .channel-card {
+            background-color: rgba(30, 30, 30, 0.9);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            border: 2px solid transparent;
+        }
+
+        .channel-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .channel-card.focused {
+            border-color: var(--focus-color);
+            box-shadow: 0 0 15px var(--focus-color);
+            transform: scale(1.05);
+            z-index: 20;
+        }
+
+        .channel-logo {
+            width: 100%;
+            height: var(--image-height);
+            background-color: #222;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #aaa;
+            font-size: 0.9rem;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .channel-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+
+        .channel-card:hover .channel-logo img {
+            transform: scale(1.1);
+        }
+
+        .channel-name {
+            font-weight: bold;
+            padding: 0.8rem;
+            text-align: center;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            line-height: 1.4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        /* Video Oynatıcı */
+        .player-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .player-container.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .close-player {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: background 0.3s;
+            z-index: 1001;
+        }
+
+        .close-player:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        .close-player.focused {
+            background: var(--focus-color);
+            box-shadow: 0 0 10px var(--focus-color);
+        }
+
+        /* Video.js Player Stilleri */
+        .video-js {
+            width: 90%;
+            max-width: 1200px;
+            max-height: 90vh;
+            outline: none;
+        }
+
+        .vjs-big-play-button {
+            background-color: rgba(229, 9, 20, 0.7) !important;
+            border-radius: 50% !important;
+            border: none !important;
+            width: 70px !important;
+            height: 70px !important;
+            line-height: 70px !important;
+        }
+
+        .vjs-duration {
+            display: inline-block !important;
+        }
+
+        /* TV Kumanda Kontrolü için Odaklanma Efekti */
+        .channel-card:focus, .category-item:focus {
+            outline: none;
+        }
+
+        /* Navigasyon İpuçları */
+        .navigation-hints {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 20px;
+            display: flex;
+            gap: 20px;
+            z-index: 50;
+            font-size: 0.9rem;
+        }
+
+        .hint-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .key {
+            background: #333;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        /* Mobil ve TV için Optimizasyon */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                transform: translateX(-100%);
+                z-index: 200;
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+            
+            .close-sidebar {
+                display: block;
+            }
+
+            .channel-list {
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                padding: 1rem;
+                grid-auto-rows: 260px;
+            }
+            
+            .header {
+                padding: 0.8rem 1rem;
+            }
+            
+            .search-box {
+                width: 200px;
+            }
+            
+            :root {
+                --card-width: 160px;
+                --card-height: 260px;
+                --image-height: 180px;
+            }
+            
+            .navigation-hints {
+                display: none;
+            }
+        }
+
+        /* TV Ekranları için */
+        @media (min-width: 1200px) {
+            :root {
+                --card-width: 240px;
+                --card-height: 360px;
+                --image-height: 270px;
+            }
+            
+            .channel-name {
+                font-size: 1.1rem;
+            }
+            
+            .channel-list {
+                gap: 2rem;
+                padding: 2rem;
+            }
+        }
+
+        /* Yükleme Animasyonu */
+        .loading-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 5;
+        }
+
+        .loading {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid var(--primary-color);
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Hata Mesajı */
+        .error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            font-size: 1.2rem;
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Üst Bilgi Çubuğu -->
+        <div class="header">
+            <button class="menu-toggle" id="menu-toggle">☰</button>
+            <div class="logo">Filmler</div>
+            <div class="search-box" id="search-box">
+                <input type="text" id="search-input" placeholder="Film ara..." aria-label="Arama">
+                <button id="search-button">🔍</button>
+            </div>
+        </div>
+
+        <!-- Ana İçerik -->
+        <div class="main-content">
+            <!-- Yükleme Animasyonu -->
+            <div class="loading-container" id="loading-container">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <span>Filmler yükleniyor...</span>
+                </div>
+            </div>
+
+            <!-- Yan Menü (Kategoriler) -->
+            <div class="sidebar" id="sidebar">
+                <div class="sidebar-header">
+                    <div class="category-title">Kategoriler</div>
+                    <button class="close-sidebar" id="close-sidebar">✕</button>
+                </div>
+                <input type="text" id="category-search" class="category-search" placeholder="Kategori ara...">
+                <ul class="category-list" id="category-list">
+                    <!-- Kategoriler buraya gelecek -->
+                </ul>
+            </div>
+
+            <!-- Film Listesi -->
+            <div class="channel-list" id="channel-list">
+                <!-- Filmler buraya gelecek -->
+            </div>
+        </div>
+
+        <!-- Video Oynatıcı -->
+        <div class="player-container" id="player-container">
+            <button class="close-player" id="close-player">✕</button>
+            <video id="video-player" class="video-js vjs-default-skin" controls></video>
+        </div>
+        
+        <!-- Navigasyon İpuçları -->
+        <div class="navigation-hints" id="navigation-hints">
+            <div class="hint-item">
+                <span class="key">←</span><span class="text">Sola Git</span>
+            </div>
+            <div class="hint-item">
+                <span class="key">→</span><span class="text">Sağa Git</span>
+            </div>
+            <div class="hint-item">
+                <span class="key">↑</span><span class="text">Yukarı Git</span>
+            </div>
+            <div class="hint-item">
+                <span class="key">↓</span><span class="text">Aşağı Git</span>
+            </div>
+            <div class="hint-item">
+                <span class="key">ENTER</span><span class="text">Seç</span>
+            </div>
+            <div class="hint-item">
+                <span class="key">ESC</span><span class="text">Geri</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // M3U URL'si
+            const M3U_URL = 'https://raw.githubusercontent.com/ademolalookman/ademola/refs/heads/main/filmfun.m3u';
+
+            // DOM Elementleri
+            const menuToggle = document.getElementById('menu-toggle');
+            const sidebar = document.getElementById('sidebar');
+            const closeSidebar = document.getElementById('close-sidebar');
+            const categoryList = document.getElementById('category-list');
+            const channelList = document.getElementById('channel-list');
+            const searchInput = document.getElementById('search-input');
+            const searchButton = document.getElementById('search-button');
+            const categorySearch = document.getElementById('category-search');
+            const playerContainer = document.getElementById('player-container');
+            const closePlayer = document.getElementById('close-player');
+            const loadingContainer = document.getElementById('loading-container');
+            const searchBox = document.getElementById('search-box');
+            const navigationHints = document.getElementById('navigation-hints');
+            
+            // Video.js player oluştur
+            const videoPlayer = videojs('video-player', {
+                controls: true,
+                autoplay: true,
+                preload: 'auto',
+                responsive: true,
+                fluid: true,
+                playbackRates: [0.5, 1, 1.5, 2],
+                html5: {
+                    hls: {
+                        overrideNative: true
+                    }
+                }
+            });
+
+            // Verileri saklamak için
+            let categories = [];
+            let channels = [];
+            let playbackPositions = {};
+            
+            // Kumanda navigasyonu için durum
+            let currentSection = 'main'; // 'header', 'sidebar', 'main', 'player'
+            let focusedElement = null;
+            let currentCategoryIndex = 0;
+            let currentChannelIndex = 0;
+            let gridColumns = 0;
+            let gridRows = 0;
+            let currentDisplayedChannels = [];
+
+            // Menü açma/kapatma
+            menuToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('active');
+                if (sidebar.classList.contains('active')) {
+                    setFocusToSidebar();
+                } else {
+                    setFocusToMain();
+                }
+            });
+
+            // Kategori menüsünü kapat
+            closeSidebar.addEventListener('click', () => {
+                sidebar.classList.remove('active');
+                setFocusToMain();
+            });
+
+            // M3U Dosyasını Yükle
+            async function loadM3U() {
+                try {
+                    const response = await fetch(M3U_URL);
+                    if (!response.ok) throw new Error('M3U dosyası alınamadı');
+                    const text = await response.text();
+                    
+                    // Yükleme ekranını hemen göster
+                    loadingContainer.style.display = 'flex';
+                    
+                    parseM3U(text);
+                    loadPlaybackPositions();
+                } catch (error) {
+                    console.error('M3U yüklenirken hata oluştu:', error);
+                    showError('M3U listesi yüklenirken hata oluştu. Lütfen bağlantıyı kontrol edin.');
+                }
+            }
+
+            // Hata göster
+            function showError(message) {
+                loadingContainer.innerHTML = `<div class="error">${message}</div>`;
+            }
+
+            // Oynatma pozisyonlarını yükle
+            function loadPlaybackPositions() {
+                const positions = localStorage.getItem('playbackPositions');
+                if (positions) {
+                    playbackPositions = JSON.parse(positions);
+                }
+            }
+
+            // Oynatma pozisyonunu kaydet
+            function savePlaybackPosition(url, position) {
+                playbackPositions[url] = position;
+                localStorage.setItem('playbackPositions', JSON.stringify(playbackPositions));
+            }
+
+            // M3U Dosyasını Ayrıştır
+            function parseM3U(text) {
+                try {
+                    const lines = text.split('\n');
+                    channels = [];
+                    categories = new Set();
+
+                    for (let i = 0; i < lines.length; i++) {
+                        if (lines[i].startsWith('#EXTINF:')) {
+                            const infoLine = lines[i];
+                            const urlLine = lines[i + 1];
+                            
+                            if (!urlLine || !urlLine.trim()) continue;
+
+                            // Kanal bilgilerini çıkar
+                            const durationMatch = infoLine.match(/(-?\d+)/);
+                            const tvgIdMatch = infoLine.match(/tvg-id="(.*?)"/);
+                            const tvgNameMatch = infoLine.match(/tvg-name="(.*?)"/);
+                            const tvgLogoMatch = infoLine.match(/tvg-logo="(.*?)"/);
+                            const groupTitleMatch = infoLine.match(/group-title="(.*?)"/);
+                            const channelNameMatch = infoLine.match(/,(.*)/);
+
+                            const channel = {
+                                id: tvgIdMatch ? tvgIdMatch[1] : '',
+                                name: channelNameMatch ? channelNameMatch[1].trim() : 'Bilinmeyen Film',
+                                logo: tvgLogoMatch ? tvgLogoMatch[1] : '',
+                                group: groupTitleMatch ? groupTitleMatch[1] : 'Diğer',
+                                url: urlLine ? urlLine.trim() : '',
+                                duration: durationMatch ? parseInt(durationMatch[1]) : 0
+                            };
+
+                            channels.push(channel);
+                            categories.add(channel.group);
+                            i++; // URL satırını atla
+                        }
+                    }
+
+                    console.log(`Toplam ${channels.length} film yüklendi`);
+                    
+                    // Kategorileri göster
+                    displayCategories();
+                    
+                    // Varsayılan olarak tüm filmleri göster
+                    displayChannels(channels);
+                    
+                } catch (e) {
+                    console.error('M3U ayrıştırma hatası:', e);
+                    showError('M3U dosyası ayrıştırılırken hata oluştu.');
+                }
+            }
+
+            // Kategorileri Listele
+            function displayCategories() {
+                categoryList.innerHTML = '';
+                const sortedCategories = Array.from(categories).sort();
+
+                // Tümü seçeneği ekle
+                const allItem = document.createElement('li');
+                allItem.textContent = 'Tüm Filmler';
+                allItem.className = 'category-item active';
+                allItem.tabIndex = 0;
+                allItem.dataset.index = "0";
+                allItem.addEventListener('click', () => {
+                    displayChannels(channels);
+                    sidebar.classList.remove('active');
+                    setFocusToMain();
+                });
+                categoryList.appendChild(allItem);
+
+                // Kategorileri ekle
+                sortedCategories.forEach((category, index) => {
+                    const item = document.createElement('li');
+                    item.textContent = category;
+                    item.className = 'category-item';
+                    item.tabIndex = 0;
+                    item.dataset.index = (index + 1).toString();
+                    item.addEventListener('click', () => {
+                        const filtered = channels.filter(channel => channel.group === category);
+                        displayChannels(filtered);
+                        sidebar.classList.remove('active');
+                        setFocusToMain();
+                    });
+                    categoryList.appendChild(item);
+                });
+
+                // Kategori arama
+                categorySearch.addEventListener('input', () => {
+                    const searchTerm = categorySearch.value.toLowerCase();
+                    const items = document.querySelectorAll('.category-item');
+                    
+                    items.forEach(item => {
+                        const text = item.textContent.toLowerCase();
+                        if (text.includes(searchTerm)) {
+                            item.style.display = 'block';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                });
+            }
+
+            // Filmleri Listele - YENİ STABİL KARTLAR
+            function displayChannels(channelsToDisplay) {
+                // Önce loading ekranını kaldır
+                loadingContainer.style.display = 'none';
+                currentDisplayedChannels = channelsToDisplay;
+                
+                // Eğer hiç film yoksa hata göster
+                if (!channelsToDisplay || channelsToDisplay.length === 0) {
+                    channelList.innerHTML = '<div class="error">Film bulunamadı.</div>';
+                    return;
+                }
+                
+                // Document fragment oluştur (performans için)
+                const fragment = document.createDocumentFragment();
+                
+                channelsToDisplay.forEach((channel, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'channel-card';
+                    card.tabIndex = 0;
+                    card.dataset.index = index.toString();
+                    
+                    // Resim yüklenmezse film adını göster
+                    const fallbackName = channel.name.length > 20 ? 
+                        channel.name.substring(0, 20) + '...' : channel.name;
+                    
+                    card.innerHTML = `
+                        <div class="channel-logo">
+                            ${channel.logo ? 
+                                `<img src="${channel.logo}" alt="${channel.name}" 
+                                    onerror="this.onerror=null; this.parentElement.textContent='${fallbackName}'">` : 
+                                fallbackName}
+                        </div>
+                        <div class="channel-name">${channel.name}</div>
+                    `;
+
+                    card.addEventListener('click', () => playChannel(channel));
+                    card.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') playChannel(channel);
+                    });
+
+                    fragment.appendChild(card);
+                });
+                
+                // Tüm kartları tek seferde ekle
+                channelList.innerHTML = '';
+                channelList.appendChild(fragment);
+                
+                // Grid boyutlarını hesapla
+                calculateGridSize();
+                
+                // İlk karta odaklan
+                currentChannelIndex = 0;
+                setFocusToChannel(0);
+            }
+
+            // Grid boyutlarını hesapla
+            function calculateGridSize() {
+                const gridStyle = window.getComputedStyle(channelList);
+                const columnCount = gridStyle.gridTemplateColumns.split(' ').length;
+                const rowCount = Math.ceil(channelList.children.length / columnCount);
+                
+                gridColumns = columnCount;
+                gridRows = rowCount;
+            }
+
+            // Arama Fonksiyonu
+            function searchChannels() {
+                const searchTerm = searchInput.value.toLowerCase();
+                if (!searchTerm) {
+                    displayChannels(channels);
+                    return;
+                }
+
+                const results = channels.filter(channel =>
+                    channel.name.toLowerCase().includes(searchTerm)
+                );
+
+                displayChannels(results);
+            }
+
+            // Film Oynat
+            function playChannel(channel) {
+                playerContainer.classList.add('active');
+                currentSection = 'player';
+                removeAllFocus();
+                closePlayer.classList.add('focused');
+                closePlayer.focus();
+                
+                // Player'ı sıfırla
+                videoPlayer.src({ src: channel.url, type: 'application/x-mpegURL' });
+                
+                // Kaldığı yerden devam et
+                const lastPosition = playbackPositions[channel.url] || 0;
+                videoPlayer.currentTime(lastPosition);
+                
+                videoPlayer.ready(() => {
+                    videoPlayer.play();
+                });
+
+                // Oynatma pozisyonunu kaydet
+                videoPlayer.on('timeupdate', function() {
+                    savePlaybackPosition(channel.url, videoPlayer.currentTime());
+                });
+            }
+
+            // Oynatıcıyı Kapat
+            function closeVideoPlayer() {
+                videoPlayer.pause();
+                playerContainer.classList.remove('active');
+                setFocusToMain();
+            }
+
+            // Kumanda Kontrolü için Fonksiyonlar
+            
+            // Tüm odaklanma stillerini kaldır
+            function removeAllFocus() {
+                document.querySelectorAll('.focused').forEach(el => {
+                    el.classList.remove('focused');
+                });
+            }
+            
+            // Header'a odaklan
+            function setFocusToHeader() {
+                currentSection = 'header';
+                removeAllFocus();
+                menuToggle.classList.add('focused');
+                menuToggle.focus();
+            }
+            
+            // Sidebar'a odaklan
+            function setFocusToSidebar() {
+                currentSection = 'sidebar';
+                removeAllFocus();
+                const firstCategory = categoryList.querySelector('.category-item');
+                if (firstCategory) {
+                    firstCategory.classList.add('focused');
+                    firstCategory.focus();
+                    currentCategoryIndex = 0;
+                }
+            }
+            
+            // Ana içeriğe odaklan
+            function setFocusToMain() {
+                currentSection = 'main';
+                removeAllFocus();
+                setFocusToChannel(0);
+            }
+            
+            // Belirli bir kanala odaklan
+            function setFocusToChannel(index) {
+                if (channelList.children.length === 0) return;
+                
+                if (index < 0) index = 0;
+                if (index >= channelList.children.length) index = channelList.children.length - 1;
+                
+                removeAllFocus();
+                const channel = channelList.children[index];
+                if (channel) {
+                    channel.classList.add('focused');
+                    channel.focus();
+                    currentChannelIndex = index;
+                }
+            }
+            
+            // Kumanda navigasyonunu yönet
+            function handleRemoteNavigation(e) {
+                // Player açıksa sadece ESC tuşunu işle
+                if (currentSection === 'player') {
+                    if (e.key === 'Escape') {
+                        closeVideoPlayer();
+                    }
+                    return;
+                }
+                
+                // Header bölümünde
+                if (currentSection === 'header') {
+                    if (e.key === 'ArrowRight') {
+                        e.preventDefault();
+                        removeAllFocus();
+                        searchBox.classList.add('focused');
+                        searchInput.focus();
+                    } else if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        setFocusToMain();
+                    } else if (e.key === 'Enter') {
+                        if (document.activeElement === menuToggle) {
+                            sidebar.classList.add('active');
+                            setFocusToSidebar();
+                        }
+                    }
+                }
+                
+                // Sidebar bölümünde
+                else if (currentSection === 'sidebar') {
+                    const categories = categoryList.querySelectorAll('.category-item');
+                    const categoryCount = categories.length;
+                    
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        currentCategoryIndex = (currentCategoryIndex + 1) % categoryCount;
+                        removeAllFocus();
+                        categories[currentCategoryIndex].classList.add('focused');
+                        categories[currentCategoryIndex].focus();
+                    } 
+                    else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        currentCategoryIndex = (currentCategoryIndex - 1 + categoryCount) % categoryCount;
+                        removeAllFocus();
+                        categories[currentCategoryIndex].classList.add('focused');
+                        categories[currentCategoryIndex].focus();
+                    }
+                    else if (e.key === 'ArrowRight') {
+                        e.preventDefault();
+                        sidebar.classList.remove('active');
+                        setFocusToMain();
+                    }
+                    else if (e.key === 'ArrowLeft') {
+                        e.preventDefault();
+                        sidebar.classList.remove('active');
+                        setFocusToHeader();
+                    }
+                    else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        categories[currentCategoryIndex].click();
+                    }
+                    else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        sidebar.classList.remove('active');
+                        setFocusToHeader();
+                    }
+                }
+                
+                // Ana içerik bölümünde
+                else if (currentSection === 'main') {
+                    if (e.key === 'ArrowLeft') {
+                        e.preventDefault();
+                        // İlk sütundaysa sidebar'a git
+                        if (currentChannelIndex % gridColumns === 0) {
+                            sidebar.classList.add('active');
+                            setFocusToSidebar();
+                        } 
+                        // Değilse bir önceki kanala git
+                        else {
+                            setFocusToChannel(currentChannelIndex - 1);
+                        }
+                    } 
+                    else if (e.key === 'ArrowRight') {
+                        e.preventDefault();
+                        // Son sütundaysa bir sonraki satıra geç
+                        if ((currentChannelIndex + 1) % gridColumns === 0) {
+                            setFocusToChannel(currentChannelIndex + 1);
+                        } 
+                        // Değilse bir sonraki kanala git
+                        else if (currentChannelIndex < channelList.children.length - 1) {
+                            setFocusToChannel(currentChannelIndex + 1);
+                        }
+                    } 
+                    else if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        // Bir sonraki satıra geç
+                        const newIndex = currentChannelIndex + gridColumns;
+                        if (newIndex < channelList.children.length) {
+                            setFocusToChannel(newIndex);
+                        }
+                    } 
+                    else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        // Bir önceki satıra geç
+                        const newIndex = currentChannelIndex - gridColumns;
+                        if (newIndex >= 0) {
+                            setFocusToChannel(newIndex);
+                        } else {
+                            // En üstteyken header'a geç
+                            setFocusToHeader();
+                        }
+                    } 
+                    else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const channel = currentDisplayedChannels[currentChannelIndex];
+                        if (channel) {
+                            playChannel(channel);
+                        }
+                    } 
+                    else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        searchInput.value = '';
+                        displayChannels(channels);
+                    }
+                }
+            }
+            
+            // Olay Dinleyicileri
+            searchButton.addEventListener('click', searchChannels);
+            searchInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') searchChannels();
+            });
+            closePlayer.addEventListener('click', closeVideoPlayer);
+            
+            // Kumanda navigasyonu için tuş dinleyicisi
+            document.addEventListener('keydown', handleRemoteNavigation);
+            
+            // Elementlerin odaklanma durumlarını takip et
+            menuToggle.addEventListener('focus', () => {
+                if (currentSection === 'header') {
+                    removeAllFocus();
+                    menuToggle.classList.add('focused');
+                }
+            });
+            
+            searchBox.addEventListener('focus', () => {
+                if (currentSection === 'header') {
+                    removeAllFocus();
+                    searchBox.classList.add('focused');
+                }
+            });
+            
+            // M3U'yu yükle
+            loadM3U();
+            
+            // Başlangıçta header'a odaklan
+            setTimeout(() => {
+                setFocusToHeader();
+            }, 500);
+        });
+    </script>
+</body>
+</html>
