@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Üye Girişi</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        input[type="text"], input[type="password"] {
+            width: 250px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        #message {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Üye Girişi</h2>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Kullanıcı Adı:</label>
+                <input type="text" id="username" name="username" placeholder="Kullanıcı adınızı girin">
+            </div>
+            <div class="form-group">
+                <label for="password">Şifre:</label>
+                <input type="password" id="password" name="password" placeholder="Şifrenizi girin" required>
+            </div>
+            <button type="submit">Giriş Yap</button>
+        </form>
+        <div id="message"></div>
+    </div>
+
+    <script>
+        function parseLocalDateTime(dateTimeString) {
+            const parts = dateTimeString.split(' ');
+            const dateParts = parts[0].split('.');
+            const timeParts = parts[1].split(':');
+            return new Date(parseInt(dateParts[2]), parseInt(dateParts[1]) - 1, parseInt(dateParts[0]), parseInt(timeParts[0]), parseInt(timeParts[1]));
+        }
+
+        const userCredentials = {
+            "utku342": { password: "utku342", expiry: "02.07.2025 04:35" },
+            "kullanici2": { password: "baska_bir_sifre2", expiry: "28.04.2025 02:46" },
+            // İhtiyacınız kadar kullanıcı ve şifre ekleyebilirsiniz (geçerlilik süresiyle birlikte)
+        };
+
+        const loggedInUserKey = 'loggedInUser';
+        const expiryDateTimeKey = 'expiryDateTimeLocal';
+        const isLoggedInKey = 'isLoggedIn'; // Kullanıcının giriş yapıp yapmadığını tutar
+        const autoLogoutInterval = 1000; // Kontrol aralığı (milisaniye)
+
+        function checkSessionExpiry() {
+            const loggedInUser = localStorage.getItem(loggedInUserKey);
+            const expiryDateTimeString = localStorage.getItem(expiryDateTimeKey);
+
+            if (loggedInUser && expiryDateTimeString) {
+                const expiryDateTime = parseLocalDateTime(expiryDateTimeString);
+                if (expiryDateTime <= new Date()) {
+                    localStorage.removeItem(loggedInUserKey);
+                    localStorage.removeItem(expiryDateTimeKey);
+                    localStorage.removeItem(isLoggedInKey);
+                    alert("Kullanıcı Adı ve Şifrenizin süresi doldu. Lütfen Telegram üzerinden yetkilimiz ile iletişime geçin.");
+                    window.location.href = 'go:sifre';
+                }
+            }
+        }
+
+        function checkLoggedIn() {
+            const loggedInUser = localStorage.getItem(loggedInUserKey);
+            const expiryDateTimeString = localStorage.getItem(expiryDateTimeKey);
+            const isLoggedIn = localStorage.getItem(isLoggedInKey);
+
+            if (loggedInUser && expiryDateTimeString && parseLocalDateTime(expiryDateTimeString) > new Date() && isLoggedIn === 'true') {
+                window.location.href = 'go:anasayfa';
+            } else {
+                localStorage.removeItem(loggedInUserKey);
+                localStorage.removeItem(expiryDateTimeKey);
+                localStorage.removeItem(isLoggedInKey);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkLoggedIn();
+            setInterval(checkSessionExpiry, autoLogoutInterval);
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const messageDiv = document.getElementById('message');
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+            const isLoggedIn = localStorage.getItem(isLoggedInKey);
+            const storedUser = localStorage.getItem(loggedInUserKey);
+
+            if (isLoggedIn === 'true' && storedUser && storedUser === username) {
+                messageDiv.textContent = "Bu Kullanıcı Adı ve Şifre bir cihazda zaten aktif.";
+                messageDiv.className = "error";
+                return;
+            }
+
+            if (userCredentials.hasOwnProperty(username)) {
+                const storedPassword = userCredentials[username].password;
+                const expiryDateTimeString = userCredentials[username].expiry;
+                const expiryDateTime = parseLocalDateTime(expiryDateTimeString);
+
+                if (storedPassword === password) {
+                    if (expiryDateTime > new Date()) {
+                        localStorage.setItem(loggedInUserKey, username);
+                        localStorage.setItem(expiryDateTimeKey, expiryDateTimeString);
+                        localStorage.setItem(isLoggedInKey, 'true'); // Giriş başarılı olduğunda işaretle
+                        messageDiv.textContent = "Giriş Başarılı!";
+                        messageDiv.className = "success";
+                        window.location.href = 'go:anasayfa';
+                    } else {
+                        messageDiv.textContent = "Kullanıcı Adı ve Şifrenizin süresi dolmuş. Lütfen Telegram üzerinden yetkilimiz ile iletişime geçin.";
+                        messageDiv.className = "error";
+                        localStorage.removeItem(loggedInUserKey);
+                        localStorage.removeItem(expiryDateTimeKey);
+                        localStorage.removeItem(isLoggedInKey);
+                    }
+                } else {
+                    messageDiv.textContent = "Giriş Başarısız. Kullanıcı Adı veya Şifre hatalı.";
+                    messageDiv.className = "error";
+                }
+            } else {
+                messageDiv.textContent = "Giriş Başarısız. Kullanıcı Adı veya Şifre hatalı.";
+                messageDiv.className = "error";
+            }
+        });
+    </script>
+</body>
+</html>
