@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PULUTO LİVE</title>
+    <!-- Video.js CSS -->
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #121212;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 15px 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            background: linear-gradient(90deg, #00d2ff 0%, #3a7bd5 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+            flex: 1;
+            width: 100%;
+        }
+        
+        .player-container {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            background: #1e1e1e;
+            margin-bottom: 20px;
+        }
+        
+        .footer {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 15px 20px;
+            text-align: center;
+            font-size: 0.9rem;
+            margin-top: auto;
+        }
+        
+        /* Video.js özel tema */
+        .vjs-theme-forest {
+            --vjs-theme-forest--primary: #00d2ff;
+            --vjs-theme-forest--secondary: #3a7bd5;
+        }
+        
+        .vjs-theme-forest .vjs-big-play-button {
+            background: linear-gradient(135deg, var(--vjs-theme-forest--primary), var(--vjs-theme-forest--secondary));
+            border: none;
+        }
+        
+        .vjs-theme-forest .vjs-control-bar {
+            background: rgba(30, 30, 30, 0.9);
+        }
+        
+        .vjs-theme-forest .vjs-play-progress {
+            background: linear-gradient(90deg, var(--vjs-theme-forest--primary), var(--vjs-theme-forest--secondary));
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>PULUTO LİVE</h1>
+    </div>
+    
+    <div class="container">
+        <div class="player-container">
+            <video-js id="my-video" class="vjs-theme-forest" controls autoplay playsinline preload="auto" width="100%" height="auto">
+                <source src="https://pulutoo-pulutotv6.hf.space/canli.php?kanal=Trt_1" type="video/mp4">
+                <p class="vjs-no-js">
+                    JavaScript devre dışı. Lütfen <a href="https://enable-javascript.com/" target="_blank">JavaScript'i etkinleştirin</a>.
+                </p>
+            </video-js>
+        </div>
+    </div>
+    
+    <div class="footer">
+        Puluto TV tüm yayın hakları saklıdır.
+    </div>
+
+    <!-- Video.js JS -->
+    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Player oluştur
+            const player = videojs('my-video', {
+                controls: true,
+                autoplay: true,
+                preload: 'auto',
+                fluid: true,
+                responsive: true,
+                playbackRates: [0.5, 1, 1.5, 2],
+                controlBar: {
+                    children: [
+                        'playToggle',
+                        'volumePanel',
+                        'currentTimeDisplay',
+                        'timeDivider',
+                        'durationDisplay',
+                        'progressControl',
+                        'liveDisplay',
+                        'remainingTimeDisplay',
+                        'customControlSpacer',
+                        'playbackRateMenuButton',
+                        'chaptersButton',
+                        'descriptionsButton',
+                        'subsCapsButton',
+                        'audioTrackButton',
+                        'fullscreenToggle'
+                    ]
+                }
+            });
+            
+            // Sesi full aç
+            player.volume(1);
+            
+            // Otomatik tam ekran fonksiyonu
+            function enterFullscreen() {
+                if (!player.isFullscreen()) {
+                    player.requestFullscreen();
+                }
+            }
+            
+            // Oynatma başladığında tam ekran yap
+            player.on('play', () => {
+                // Kullanıcı etkileşimi olduğunda tam ekran yap
+                document.addEventListener('click', function fullscreenHandler() {
+                    enterFullscreen();
+                    document.removeEventListener('click', fullscreenHandler);
+                });
+            });
+            
+            // Hata yönetimi
+            player.on('error', () => {
+                const error = player.error();
+                console.error('Video oynatma hatası:', error);
+            });
+            
+            // Player hazır olduğunda
+            player.ready(() => {
+                console.log('Player hazır');
+            });
+        });
+    </script>
+</body>
+</html>
