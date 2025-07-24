@@ -413,7 +413,7 @@
             }
             
             function loadM3UPlaylist() {
-                const m3uUrl = 'https://tinyurl.com/2bhf2qox';
+                const m3uUrl = 'https://www.dropbox.com/scl/fi/78t6ttqtnxpct3nff4s56/rectvfilm_playlist.m3u';
                 
                 fetch(m3uUrl)
                     .then(response => {
@@ -423,7 +423,7 @@
                     .then(data => parseM3U(data))
                     .catch(error => {
                         console.error('Error loading M3U playlist:', error);
-                        showError('Filmler yüklenirken bir hata oluştu. Lütfen internet bağlantınızı kontrol edip sayfayı yenileyin.');
+                        showError('Filmler yüklenirken bir hata oluştızı kontrol edip sayfayı yenileyin.');
                     });
             }
             
