@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Puluto TV | Ana Sayfa</title>
+    
+    <link rel="preload" href="https://fonts.gstatic.com/s/poppins/v20/pxiByp8kv8JHgMZmN6lC.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="https://fonts.gstatic.com/s/poppins/v20/pxiByp8kv8JHgMZmN6lC.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="https://fonts.gstatic.com/s/poppins/v20/pxiByp8kv8JHgMZmN6lC.woff2" as="font" type="font/woff2" crossorigin>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #0d0d1a;
+            --text-color: #f0f0f0;
+            --font-main: 'Poppins', sans-serif;
+            --selection-glow-color: rgba(0, 225, 255, 0.7);
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 40px 20px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            position: relative;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 10% 20%, rgba(132, 0, 255, 0.3), transparent 40%),
+                radial-gradient(circle at 80% 90%, rgba(0, 225, 255, 0.3), transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(255, 69, 0, 0.2), transparent 40%);
+            filter: blur(80px);
+            z-index: -1;
+            animation: moveAurora 20s infinite alternate ease-in-out;
+        }
+
+        @keyframes moveAurora {
+            0% { transform: scale(1) rotate(0deg); }
+            100% { transform: scale(1.2) rotate(20deg); }
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .header {
+            font-size: 3em;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 40px;
+            flex-shrink: 0;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+            letter-spacing: 2px;
+            user-select: none;
+        }
+
+        .category-container {
+            width: 100%;
+            max-width: 900px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .category-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 20px;
+            min-height: 120px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            text-align: center;
+            cursor: pointer;
+            outline: none;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            .category-card:hover,
+            .category-card:focus {
+                transform: translateY(-8px) scale(1.05);
+                border-color: rgba(255, 255, 255, 0.9);
+                box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5),
+                            0 0 25px var(--selection-glow-color);
+            }
+        }
+        
+        .category-card:active {
+            transform: translateY(-2px) scale(0.98);
+            border-color: rgba(255, 255, 255, 1);
+            box-shadow: 0 0 25px var(--selection-glow-color);
+        }
+
+        .category-card i {
+            font-size: 2.2em;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .category-card span {
+            font-size: 1.1em;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .category-card[href="go:dizi"] i, 
+        .category-card[href="go:film"] i { color: #00E1FF; }
+        .category-card[href="go:beinsports"] i { color: #8A2BE2; }
+        .category-card[href="go:tg"] i { color: #2AABEE; }
+        .category-card[href="go:ig"] i { color: #E4405F; }
+
+        @media (max-width: 768px) {
+            body { padding: 30px 15px; }
+            .header { font-size: 2.5em; margin-bottom: 30px; }
+            .category-container {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                gap: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body { padding: 20px 10px; }
+            .header { font-size: 2em; }
+            .category-container {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+            .category-card {
+                min-height: 110px;
+                padding: 15px;
+                border-radius: 12px;
+                gap: 8px;
+            }
+            .category-card i { font-size: 2em; }
+            .category-card span { font-size: 1em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">Puluto TV</div>
+
+    <div class="category-container">
+        <a href="go:ulusal" class="category-card"><i class="fa-solid fa-tv"></i><span>ULUSAL</span></a>
+        <a href="go:haber" class="category-card"><i class="fa-solid fa-newspaper"></i><span>HABER</span></a>
+        <a href="go:belgesel" class="category-card"><i class="fa-solid fa-leaf"></i><span>BELGESEL</span></a>
+        <a href="go:cocuk" class="category-card"><i class="fa-solid fa-child-reaching"></i><span>ÇOCUK</span></a>
+        <a href="go:spor" class="category-card"><i class="fa-solid fa-futbol"></i><span>SPOR</span></a>
+        <a href="go:beinsports" class="category-card"><i class="fa-solid fa-satellite-dish"></i><span>BEIN SPORTS</span></a>
+        <a href="go:sinema" class="category-card"><i class="fa-solid fa-film"></i><span>SİNEMA</span></a>
+        <a href="go:vipsinema" class="category-card"><i class="fa-solid fa-star"></i><span>VİP SİNEMA</span></a>
+        <a href="go:dizi" class="category-card"><i class="fa-solid fa-masks-theater"></i><span>DİZİ İZLE</span></a>
+        <a href="go:film" class="category-card"><i class="fa-solid fa-ticket"></i><span>FİLM İZLE</span></a>
+        <a href="go:tg" class="category-card"><i class="fa-brands fa-telegram"></i><span>TELEGRAM</span></a>
+        <a href="go:ig" class="category-card"><i class="fa-brands fa-instagram"></i><span>INSTAGRAM</span></a>
+    </div>
+
+    <script>
+        // DOMContentLoaded dinleyicisine artık gerek yok çünkü script etiketi body'nin sonunda
+        const categoryCards = document.querySelectorAll('.category-card');
+        categoryCards.forEach(card => {
+            card.addEventListener('click', function(e) {
+                const href = this.getAttribute('href');
+            });
+            card.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    this.click();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
